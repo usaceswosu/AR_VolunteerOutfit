@@ -80,8 +80,9 @@ function createOutfitButtons() {
   buttonContainer.id = 'outfit-buttons';
   buttonContainer.style.cssText = `
     position: fixed;
-    top: 20px;
+    top: 50%;
     right: 20px;
+    transform: translateY(-50%);
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -194,7 +195,7 @@ function overlayImageOnCanvas(img, landmarks, isHead = false) {
     overlayWidth = shoulderWidth * 1.2 * OUTFIT_SCALE;
     overlayHeight = overlayWidth; // Keep square for hats
     overlayX = shoulderCenterX - overlayWidth / 2;
-    overlayY = shoulderCenterY - overlayHeight * 1.2; // Position above shoulders
+    overlayY = shoulderCenterY - overlayHeight * 0.7; // Fixed: much lower positioning
     
   } else {
     // Torso positioning (enhanced from ARLifejackets)
@@ -236,28 +237,40 @@ function overlayImageOnCanvas(img, landmarks, isHead = false) {
   canvasCtx.drawImage(img, overlayX, overlayY, overlayWidth, overlayHeight);
 }
 
-// Video setup - ensure full screen coverage
+// Video setup - maintain quality while filling screen
 videoElement.onloadedmetadata = () => {
-  // Match canvas size with camera native resolution for best quality
-  canvasElement.width = videoElement.videoWidth;
-  canvasElement.height = videoElement.videoHeight;
+  const videoAspectRatio = videoElement.videoWidth / videoElement.videoHeight;
+  const screenAspectRatio = window.innerWidth / window.innerHeight;
 
-  // Force video and canvas to fill entire screen
-  const fullWidth = window.innerWidth;
-  const fullHeight = window.innerHeight;
+  // Use higher resolution for canvas to maintain quality
+  const canvasWidth = Math.max(videoElement.videoWidth, window.innerWidth);
+  const canvasHeight = Math.max(videoElement.videoHeight, window.innerHeight);
   
-  // Set both video and canvas to fill screen completely
-  videoElement.style.width = fullWidth + 'px';
-  videoElement.style.height = fullHeight + 'px';
-  canvasElement.style.width = fullWidth + 'px';
-  canvasElement.style.height = fullHeight + 'px';
+  canvasElement.width = canvasWidth;
+  canvasElement.height = canvasHeight;
+
+  // Fill screen while maintaining aspect ratio
+  let displayWidth, displayHeight;
+  if (screenAspectRatio > videoAspectRatio) {
+    displayHeight = window.innerHeight;
+    displayWidth = displayHeight * videoAspectRatio;
+  } else {
+    displayWidth = window.innerWidth;
+    displayHeight = displayWidth / videoAspectRatio;
+  }
   
-  // Remove any transforms that might be interfering
-  canvasElement.style.left = '0';
-  canvasElement.style.top = '0';
-  canvasElement.style.transform = 'none';
+  // Center the video/canvas
+  const offsetX = (window.innerWidth - displayWidth) / 2;
+  const offsetY = (window.innerHeight - displayHeight) / 2;
   
-  console.log(`Video: ${videoElement.videoWidth}x${videoElement.videoHeight}, Screen: ${fullWidth}x${fullHeight}`);
+  videoElement.style.width = displayWidth + 'px';
+  videoElement.style.height = displayHeight + 'px';
+  canvasElement.style.width = displayWidth + 'px';
+  canvasElement.style.height = displayHeight + 'px';
+  canvasElement.style.left = offsetX + 'px';
+  canvasElement.style.top = offsetY + 'px';
+  
+  console.log(`Video: ${videoElement.videoWidth}x${videoElement.videoHeight}, Display: ${displayWidth}x${displayHeight}`);
 };
 
 // Initialize camera (simplified to avoid multiple permission prompts)
