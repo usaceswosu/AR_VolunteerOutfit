@@ -22,12 +22,13 @@ video {
 /* Visible canvas where everything is drawn */
 canvas {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
   z-index: 1;
   pointer-events: none;
-  /* Width and height will be set by JavaScript to fill screen */
 }
 
 /* Outfit selection buttons */

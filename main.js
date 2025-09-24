@@ -236,59 +236,46 @@ function overlayImageOnCanvas(img, landmarks, isHead = false) {
   canvasCtx.drawImage(img, overlayX, overlayY, overlayWidth, overlayHeight);
 }
 
-// Video setup
+// Video setup - ensure full screen coverage
 videoElement.onloadedmetadata = () => {
-  const videoAspectRatio = videoElement.videoWidth / videoElement.videoHeight;
-  const screenAspectRatio = window.innerWidth / window.innerHeight;
-
-  // Match canvas size with camera native resolution
+  // Match canvas size with camera native resolution for best quality
   canvasElement.width = videoElement.videoWidth;
   canvasElement.height = videoElement.videoHeight;
 
-  // Fill screen while maintaining aspect ratio (may crop edges)
-  let displayWidth, displayHeight;
+  // Force video and canvas to fill entire screen
+  const fullWidth = window.innerWidth;
+  const fullHeight = window.innerHeight;
   
-  if (screenAspectRatio > videoAspectRatio) {
-    // Screen is wider than video - fill width, crop height if needed
-    displayWidth = window.innerWidth;
-    displayHeight = displayWidth / videoAspectRatio;
-  } else {
-    // Screen is taller than video - fill height, crop width if needed
-    displayHeight = window.innerHeight;
-    displayWidth = displayHeight * videoAspectRatio;
-  }
-
-  // Apply the calculated dimensions to fill screen
-  videoElement.style.width = displayWidth + 'px';
-  videoElement.style.height = displayHeight + 'px';
-  canvasElement.style.width = displayWidth + 'px';
-  canvasElement.style.height = displayHeight + 'px';
+  // Set both video and canvas to fill screen completely
+  videoElement.style.width = fullWidth + 'px';
+  videoElement.style.height = fullHeight + 'px';
+  canvasElement.style.width = fullWidth + 'px';
+  canvasElement.style.height = fullHeight + 'px';
   
-  console.log(`Video: ${videoElement.videoWidth}x${videoElement.videoHeight}, Display: ${displayWidth}x${displayHeight}`);
+  // Remove any transforms that might be interfering
+  canvasElement.style.left = '0';
+  canvasElement.style.top = '0';
+  canvasElement.style.transform = 'none';
+  
+  console.log(`Video: ${videoElement.videoWidth}x${videoElement.videoHeight}, Screen: ${fullWidth}x${fullHeight}`);
 };
 
-// Initialize camera with high quality settings
+// Initialize camera (simplified to avoid multiple permission prompts)
 navigator.mediaDevices.getUserMedia({ 
   video: {
-    width: { ideal: 1280, min: 640 },
-    height: { ideal: 720, min: 480 },
-    frameRate: { ideal: 30 },
-    facingMode: 'user'
+    width: { ideal: 1280 },
+    height: { ideal: 720 },
+    frameRate: { ideal: 30 }
   }
+}).catch(err => {
+  console.warn('High quality camera failed, trying basic:', err);
+  // Only fallback if the first attempt fails
+  return navigator.mediaDevices.getUserMedia({ video: true });
 }).then(stream => {
   videoElement.srcObject = stream;
   console.log('Camera initialized successfully');
 }).catch(err => {
-  console.error('Error accessing high-quality camera, trying basic:', err);
-  // Fallback to basic video constraints if specific constraints fail
-  return navigator.mediaDevices.getUserMedia({ video: true });
-}).then(stream => {
-  if (stream && !videoElement.srcObject) {
-    videoElement.srcObject = stream;
-    console.log('Camera initialized with basic settings');
-  }
-}).catch(err => {
-  console.error('Failed to access any camera:', err);
+  console.error('Failed to access camera:', err);
 });
 
 // MediaPipe pose detection setup
