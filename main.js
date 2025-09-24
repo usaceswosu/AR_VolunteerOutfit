@@ -256,23 +256,51 @@ videoElement.onloadedmetadata = () => {
   console.log(`Video: ${videoElement.videoWidth}x${videoElement.videoHeight}, Screen: 100vw x 100vh`);
 };
 
-// Initialize camera (simplified to avoid multiple permission prompts)
-navigator.mediaDevices.getUserMedia({ 
-  video: {
-    width: { ideal: 1280 },
-    height: { ideal: 720 },
-    frameRate: { ideal: 30 }
+// Initialize camera with clean fallback approach
+async function initializeCamera() {
+  const constraints = [
+    // Try high quality first
+    { 
+      video: { 
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        facingMode: 'user'
+      } 
+    },
+    // Fallback to basic video
+    { video: { facingMode: 'user' } },
+    // Final fallback - any video
+    { video: true }
+  ];
+  
+  for (let i = 0; i < constraints.length; i++) {
+    try {
+      console.log(`Trying camera option ${i + 1}/${constraints.length}...`);
+      const stream = await navigator.mediaDevices.getUserMedia(constraints[i]);
+      
+      console.log('Camera stream obtained');
+      videoElement.srcObject = stream;
+      
+      // Force video to play
+      try {
+        await videoElement.play();
+        console.log('Video playing successfully');
+      } catch (playErr) {
+        console.error('Video play error:', playErr);
+      }
+      
+      return; // Success - exit the loop
+      
+    } catch (err) {
+      console.warn(`Camera option ${i + 1} failed:`, err.message);
+      if (i === constraints.length - 1) {
+        console.error('All camera options failed:', err);
+      }
+    }
   }
-}).catch(err => {
-  console.warn('High quality camera failed, trying basic:', err);
-  // Only fallback if the first attempt fails
-  return navigator.mediaDevices.getUserMedia({ video: true });
-}).then(stream => {
-  videoElement.srcObject = stream;
-  console.log('Camera initialized successfully');
-}).catch(err => {
-  console.error('Failed to access camera:', err);
-});
+}
+
+initializeCamera();
 
 // MediaPipe pose detection setup
 const pose = new Pose({
