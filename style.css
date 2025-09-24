@@ -21,10 +21,14 @@ video {
 
 /* Visible canvas where everything is drawn */
 canvas {
-  position: absolute;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
   z-index: 1;
   pointer-events: none;
-  /* Position and size will be set by JavaScript */
 }
 
 /* Outfit selection buttons */

@@ -237,39 +237,23 @@ function overlayImageOnCanvas(img, landmarks, isHead = false) {
   canvasCtx.drawImage(img, overlayX, overlayY, overlayWidth, overlayHeight);
 }
 
-// Video setup - fill entire screen
+// Video setup - force full screen
 videoElement.onloadedmetadata = () => {
-  const videoAspectRatio = videoElement.videoWidth / videoElement.videoHeight;
-  const screenAspectRatio = window.innerWidth / window.innerHeight;
-
-  // Set canvas to match video resolution for quality
+  // Set canvas to match video resolution
   canvasElement.width = videoElement.videoWidth;
   canvasElement.height = videoElement.videoHeight;
 
-  // Force full screen coverage (crop edges if needed)
-  let displayWidth, displayHeight;
-  if (screenAspectRatio > videoAspectRatio) {
-    // Screen is wider - fill width, crop height
-    displayWidth = window.innerWidth;
-    displayHeight = displayWidth / videoAspectRatio;
-  } else {
-    // Screen is taller - fill height, crop width
-    displayHeight = window.innerHeight;
-    displayWidth = displayHeight * videoAspectRatio;
-  }
+  // Force both video and canvas to fill entire screen
+  videoElement.style.width = '100vw';
+  videoElement.style.height = '100vh';
+  videoElement.style.objectFit = 'cover';
   
-  // Position to fill screen completely
-  const offsetX = (window.innerWidth - displayWidth) / 2;
-  const offsetY = (window.innerHeight - displayHeight) / 2;
+  canvasElement.style.width = '100vw';
+  canvasElement.style.height = '100vh';
+  canvasElement.style.left = '0px';
+  canvasElement.style.top = '0px';
   
-  videoElement.style.width = displayWidth + 'px';
-  videoElement.style.height = displayHeight + 'px';
-  canvasElement.style.width = displayWidth + 'px';
-  canvasElement.style.height = displayHeight + 'px';
-  canvasElement.style.left = offsetX + 'px';
-  canvasElement.style.top = offsetY + 'px';
-  
-  console.log(`Video: ${videoElement.videoWidth}x${videoElement.videoHeight}, Display: ${displayWidth}x${displayHeight}`);
+  console.log(`Video: ${videoElement.videoWidth}x${videoElement.videoHeight}, Screen: 100vw x 100vh`);
 };
 
 // Initialize camera (simplified to avoid multiple permission prompts)
