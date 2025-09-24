@@ -174,8 +174,8 @@ function switchOutfitSet(newIndex) {
   });
 }
 
-// Enhanced overlay function with better positioning
-function overlayImageOnCanvas(img, landmarks, isHead = false) {
+// Enhanced overlay function with better positioning and multi-person support
+function overlayImageOnCanvas(img, landmarks, isHead = false, personIndex = 0) {
   if (!img) return;
   
   const w = canvasElement.width;
@@ -184,18 +184,29 @@ function overlayImageOnCanvas(img, landmarks, isHead = false) {
   let overlayX, overlayY, overlayWidth, overlayHeight;
   
   if (isHead) {
-    // Head/hat positioning (similar to ARLifejackets logic)
+    // Head/hat positioning using nose for accurate placement
+    const nose = landmarks[0];
     const leftShoulder = landmarks[11];
     const rightShoulder = landmarks[12];
+    
+    if (!nose || !leftShoulder || !rightShoulder) return;
     
     const shoulderWidth = Math.abs((rightShoulder.x - leftShoulder.x) * w);
     const shoulderCenterX = ((leftShoulder.x + rightShoulder.x) / 2) * w;
     const shoulderCenterY = ((leftShoulder.y + rightShoulder.y) / 2) * h;
     
+    // Use nose position for more accurate head placement
+    const noseX = nose.x * w;
+    const noseY = nose.y * h;
+    
     overlayWidth = shoulderWidth * 1.2 * OUTFIT_SCALE;
     overlayHeight = overlayWidth; // Keep square for hats
-    overlayX = shoulderCenterX - overlayWidth / 2;
-    overlayY = shoulderCenterY - overlayHeight * 0.9; // Above shoulders but not over face
+    overlayX = noseX - overlayWidth / 2;
+    
+    // Position hat just above nose, accounting for different head sizes
+    const headToShoulderDistance = Math.abs(noseY - shoulderCenterY);
+    const hatOffset = Math.max(overlayHeight * 0.6, headToShoulderDistance * 0.3);
+    overlayY = noseY - hatOffset;
     
   } else {
     // Torso positioning (enhanced from ARLifejackets)
@@ -217,21 +228,20 @@ function overlayImageOnCanvas(img, landmarks, isHead = false) {
     overlayY = torsoTop - overlayHeight * 0.1; // Slight offset upward
   }
   
-  // Apply smoothing if we have previous coordinates
-  if (prevCoords) {
-    const key = isHead ? 'head' : 'torso';
-    if (prevCoords[key]) {
-      overlayX = SMOOTHING_ALPHA * overlayX + (1 - SMOOTHING_ALPHA) * prevCoords[key].x;
-      overlayY = SMOOTHING_ALPHA * overlayY + (1 - SMOOTHING_ALPHA) * prevCoords[key].y;
-      overlayWidth = SMOOTHING_ALPHA * overlayWidth + (1 - SMOOTHING_ALPHA) * prevCoords[key].width;
-      overlayHeight = SMOOTHING_ALPHA * overlayHeight + (1 - SMOOTHING_ALPHA) * prevCoords[key].height;
-    }
+  // Apply smoothing if we have previous coordinates (per person)
+  if (!prevCoords) prevCoords = {};
+  if (!prevCoords[personIndex]) prevCoords[personIndex] = {};
+  
+  const key = isHead ? 'head' : 'torso';
+  if (prevCoords[personIndex][key]) {
+    overlayX = SMOOTHING_ALPHA * overlayX + (1 - SMOOTHING_ALPHA) * prevCoords[personIndex][key].x;
+    overlayY = SMOOTHING_ALPHA * overlayY + (1 - SMOOTHING_ALPHA) * prevCoords[personIndex][key].y;
+    overlayWidth = SMOOTHING_ALPHA * overlayWidth + (1 - SMOOTHING_ALPHA) * prevCoords[personIndex][key].width;
+    overlayHeight = SMOOTHING_ALPHA * overlayHeight + (1 - SMOOTHING_ALPHA) * prevCoords[personIndex][key].height;
   }
   
   // Save current coordinates for next frame smoothing
-  if (!prevCoords) prevCoords = {};
-  const key = isHead ? 'head' : 'torso';
-  prevCoords[key] = { x: overlayX, y: overlayY, width: overlayWidth, height: overlayHeight };
+  prevCoords[personIndex][key] = { x: overlayX, y: overlayY, width: overlayWidth, height: overlayHeight };
   
   // Draw the image
   canvasCtx.drawImage(img, overlayX, overlayY, overlayWidth, overlayHeight);
@@ -315,23 +325,30 @@ pose.onResults((results) => {
   // Draw the results image (no stretching since canvas matches aspect ratio)
   canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-  if (!results.poseLandmarks) {
+  // Handle multiple people or single person
+  const allPoseLandmarks = results.multiPoseLandmarks || (results.poseLandmarks ? [results.poseLandmarks] : []);
+  
+  if (allPoseLandmarks.length === 0) {
     prevCoords = null; // Reset smoothing when no pose detected
     return;
   }
 
-  const landmarks = results.poseLandmarks;
-  const currentSet = outfitSets[currentSetIndex];
-  
-  // Draw torso outfit if available
-  if (currentSet.torso && outfitImages[`${currentSetIndex}_torso`]) {
-    overlayImageOnCanvas(outfitImages[`${currentSetIndex}_torso`], landmarks, false);
-  }
-  
-  // Draw head outfit if available
-  if (currentSet.head && outfitImages[`${currentSetIndex}_head`]) {
-    overlayImageOnCanvas(outfitImages[`${currentSetIndex}_head`], landmarks, true);
-  }
+  // Apply outfits to all detected people
+  allPoseLandmarks.forEach((landmarks, personIndex) => {
+    if (!landmarks || landmarks.length === 0) return;
+    
+    const currentSet = outfitSets[currentSetIndex];
+    
+    // Draw torso outfit if available
+    if (currentSet.torso && outfitImages[`${currentSetIndex}_torso`]) {
+      overlayImageOnCanvas(outfitImages[`${currentSetIndex}_torso`], landmarks, false, personIndex);
+    }
+    
+    // Draw head outfit if available
+    if (currentSet.head && outfitImages[`${currentSetIndex}_head`]) {
+      overlayImageOnCanvas(outfitImages[`${currentSetIndex}_head`], landmarks, true, personIndex);
+    }
+  });
 });
 
 // Start camera and pose detection
