@@ -302,29 +302,12 @@ pose.setOptions({
   minTrackingConfidence: 0.5
 });
 
-// Enhanced pose results processing with proper aspect ratio
+// Enhanced pose results processing - simple and working
 pose.onResults((results) => {
   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
   
-  // Draw video maintaining aspect ratio (no stretching)
-  const videoAspectRatio = results.image.videoWidth / results.image.videoHeight;
-  const canvasAspectRatio = canvasElement.width / canvasElement.height;
-  
-  let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
-  
-  if (canvasAspectRatio > videoAspectRatio) {
-    // Canvas is wider - fit to height
-    drawHeight = canvasElement.height;
-    drawWidth = drawHeight * videoAspectRatio;
-    offsetX = (canvasElement.width - drawWidth) / 2;
-  } else {
-    // Canvas is taller - fit to width
-    drawWidth = canvasElement.width;
-    drawHeight = drawWidth / videoAspectRatio;
-    offsetY = (canvasElement.height - drawHeight) / 2;
-  }
-  
-  canvasCtx.drawImage(results.image, offsetX, offsetY, drawWidth, drawHeight);
+  // Draw video to fill canvas (aspect ratio handled by canvas sizing)
+  canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
   if (!results.poseLandmarks) {
     prevCoords = null; // Reset smoothing when no pose detected
