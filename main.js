@@ -237,35 +237,10 @@ function overlayImageOnCanvas(img, landmarks, isHead = false) {
   canvasCtx.drawImage(img, overlayX, overlayY, overlayWidth, overlayHeight);
 }
 
-// Video setup with proper aspect ratio handling
+// Video setup - let MediaPipe handle sizing
 videoElement.onloadedmetadata = () => {
-  const videoAspectRatio = videoElement.videoWidth / videoElement.videoHeight;
-  const screenAspectRatio = window.innerWidth / window.innerHeight;
-  
-  let displayWidth, displayHeight;
-  
-  // Calculate display size that fits screen without stretching
-  if (screenAspectRatio > videoAspectRatio) {
-    // Screen is wider - fit to height
-    displayHeight = window.innerHeight;
-    displayWidth = displayHeight * videoAspectRatio;
-  } else {
-    // Screen is taller - fit to width
-    displayWidth = window.innerWidth;
-    displayHeight = displayWidth / videoAspectRatio;
-  }
-  
-  // Set canvas to display size for sharp rendering
-  canvasElement.width = displayWidth;
-  canvasElement.height = displayHeight;
-  
-  // Center the canvas
-  canvasElement.style.width = displayWidth + 'px';
-  canvasElement.style.height = displayHeight + 'px';
-  canvasElement.style.left = (window.innerWidth - displayWidth) / 2 + 'px';
-  canvasElement.style.top = (window.innerHeight - displayHeight) / 2 + 'px';
-  
-  console.log(`Video: ${videoElement.videoWidth}x${videoElement.videoHeight}, Display: ${displayWidth}x${displayHeight}`);
+  console.log(`Video loaded: ${videoElement.videoWidth}x${videoElement.videoHeight}`);
+  // Don't set canvas size here - wait for MediaPipe results
 };
 
 // Simple camera initialization (let MediaPipe Camera handle it)
@@ -302,11 +277,42 @@ pose.setOptions({
   minTrackingConfidence: 0.5
 });
 
-// Enhanced pose results processing - simple and working
+// Enhanced pose results processing with proper sizing
 pose.onResults((results) => {
+  if (!results.image) return;
+  
+  // Set canvas size based on actual MediaPipe results image
+  const imageWidth = results.image.width;
+  const imageHeight = results.image.height;
+  const imageAspectRatio = imageWidth / imageHeight;
+  const screenAspectRatio = window.innerWidth / window.innerHeight;
+  
+  let displayWidth, displayHeight;
+  
+  // Calculate display size that fits screen without stretching
+  if (screenAspectRatio > imageAspectRatio) {
+    // Screen is wider - fit to height
+    displayHeight = window.innerHeight;
+    displayWidth = displayHeight * imageAspectRatio;
+  } else {
+    // Screen is taller - fit to width
+    displayWidth = window.innerWidth;
+    displayHeight = displayWidth / imageAspectRatio;
+  }
+  
+  // Set canvas to display size
+  canvasElement.width = displayWidth;
+  canvasElement.height = displayHeight;
+  
+  // Center the canvas
+  canvasElement.style.width = displayWidth + 'px';
+  canvasElement.style.height = displayHeight + 'px';
+  canvasElement.style.left = (window.innerWidth - displayWidth) / 2 + 'px';
+  canvasElement.style.top = (window.innerHeight - displayHeight) / 2 + 'px';
+  
   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
   
-  // Draw video to fill canvas (aspect ratio handled by canvas sizing)
+  // Draw the results image (no stretching since canvas matches aspect ratio)
   canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
   if (!results.poseLandmarks) {
