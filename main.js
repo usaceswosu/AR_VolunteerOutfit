@@ -195,7 +195,7 @@ function overlayImageOnCanvas(img, landmarks, isHead = false) {
     overlayWidth = shoulderWidth * 1.2 * OUTFIT_SCALE;
     overlayHeight = overlayWidth; // Keep square for hats
     overlayX = shoulderCenterX - overlayWidth / 2;
-    overlayY = shoulderCenterY - overlayHeight * 0.7; // Fixed: much lower positioning
+    overlayY = shoulderCenterY - overlayHeight * 0.9; // Above shoulders but not over face
     
   } else {
     // Torso positioning (enhanced from ARLifejackets)
@@ -237,29 +237,28 @@ function overlayImageOnCanvas(img, landmarks, isHead = false) {
   canvasCtx.drawImage(img, overlayX, overlayY, overlayWidth, overlayHeight);
 }
 
-// Video setup - maintain quality while filling screen
+// Video setup - fill entire screen
 videoElement.onloadedmetadata = () => {
   const videoAspectRatio = videoElement.videoWidth / videoElement.videoHeight;
   const screenAspectRatio = window.innerWidth / window.innerHeight;
 
-  // Use higher resolution for canvas to maintain quality
-  const canvasWidth = Math.max(videoElement.videoWidth, window.innerWidth);
-  const canvasHeight = Math.max(videoElement.videoHeight, window.innerHeight);
-  
-  canvasElement.width = canvasWidth;
-  canvasElement.height = canvasHeight;
+  // Set canvas to match video resolution for quality
+  canvasElement.width = videoElement.videoWidth;
+  canvasElement.height = videoElement.videoHeight;
 
-  // Fill screen while maintaining aspect ratio
+  // Force full screen coverage (crop edges if needed)
   let displayWidth, displayHeight;
   if (screenAspectRatio > videoAspectRatio) {
-    displayHeight = window.innerHeight;
-    displayWidth = displayHeight * videoAspectRatio;
-  } else {
+    // Screen is wider - fill width, crop height
     displayWidth = window.innerWidth;
     displayHeight = displayWidth / videoAspectRatio;
+  } else {
+    // Screen is taller - fill height, crop width
+    displayHeight = window.innerHeight;
+    displayWidth = displayHeight * videoAspectRatio;
   }
   
-  // Center the video/canvas
+  // Position to fill screen completely
   const offsetX = (window.innerWidth - displayWidth) / 2;
   const offsetY = (window.innerHeight - displayHeight) / 2;
   
