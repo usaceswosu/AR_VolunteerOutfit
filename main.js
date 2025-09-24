@@ -237,73 +237,46 @@ function overlayImageOnCanvas(img, landmarks, isHead = false) {
   canvasCtx.drawImage(img, overlayX, overlayY, overlayWidth, overlayHeight);
 }
 
-// Video setup - match canvas to screen resolution for sharp display
+// Video setup - pure contain for any camera
 videoElement.onloadedmetadata = () => {
-  // Set canvas resolution to match screen for crisp rendering
-  const screenWidth = window.innerWidth;
-  const screenHeight = window.innerHeight;
-  
-  canvasElement.width = screenWidth;
-  canvasElement.height = screenHeight;
+  // Set canvas to match video resolution for best quality
+  canvasElement.width = videoElement.videoWidth;
+  canvasElement.height = videoElement.videoHeight;
 
-  // Set display size to fill screen
+  // Pure contain - no stretching, works with any camera aspect ratio
   videoElement.style.width = '100vw';
   videoElement.style.height = '100vh';
-  videoElement.style.objectFit = 'cover';
+  videoElement.style.objectFit = 'contain';
   
   canvasElement.style.width = '100vw';
   canvasElement.style.height = '100vh';
+  canvasElement.style.objectFit = 'contain';
   canvasElement.style.left = '0px';
   canvasElement.style.top = '0px';
   
-  console.log(`Video: ${videoElement.videoWidth}x${videoElement.videoHeight}, Canvas: ${screenWidth}x${screenHeight}`);
+  console.log(`Video: ${videoElement.videoWidth}x${videoElement.videoHeight}`);
 };
 
-// Initialize camera with clean fallback approach
-async function initializeCamera() {
-  const constraints = [
-    // Try high quality first
-    { 
-      video: { 
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-        facingMode: 'user'
-      } 
-    },
-    // Fallback to basic video
-    { video: { facingMode: 'user' } },
-    // Final fallback - any video
-    { video: true }
-  ];
-  
-  for (let i = 0; i < constraints.length; i++) {
-    try {
-      console.log(`Trying camera option ${i + 1}/${constraints.length}...`);
-      const stream = await navigator.mediaDevices.getUserMedia(constraints[i]);
-      
-      console.log('Camera stream obtained');
-      videoElement.srcObject = stream;
-      
-      // Force video to play
-      try {
-        await videoElement.play();
-        console.log('Video playing successfully');
-      } catch (playErr) {
-        console.error('Video play error:', playErr);
-      }
-      
-      return; // Success - exit the loop
-      
-    } catch (err) {
-      console.warn(`Camera option ${i + 1} failed:`, err.message);
-      if (i === constraints.length - 1) {
-        console.error('All camera options failed:', err);
-      }
-    }
+// Simple camera initialization (let MediaPipe Camera handle it)
+navigator.mediaDevices.getUserMedia({ 
+  video: {
+    width: { ideal: 1280 },
+    height: { ideal: 720 }
   }
-}
-
-initializeCamera();
+}).then(stream => {
+  videoElement.srcObject = stream;
+  console.log('Camera initialized successfully');
+}).catch(err => {
+  console.warn('High quality failed, trying basic camera');
+  return navigator.mediaDevices.getUserMedia({ video: true });
+}).then(stream => {
+  if (stream) {
+    videoElement.srcObject = stream;
+    console.log('Basic camera initialized');
+  }
+}).catch(err => {
+  console.error('Camera failed:', err);
+});
 
 // MediaPipe pose detection setup
 const pose = new Pose({
