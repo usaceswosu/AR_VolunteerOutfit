@@ -9,7 +9,7 @@ const canvasCtx = canvasElement.getContext('2d');
 
 // Define outfit sets (similar to ARLifejackets)
 const outfitSets = [
-  { torso: 'images/lifejacket2.png', head: null, name: 'Lifejacket' },
+  { torso: 'images/lifejacket3.png', head: null, name: 'Lifejacket' },
   { torso: 'images/ranger_vest.png', head: 'images/ranger_hat.png', name: 'Ranger' },
   { torso: 'images/volunteer_vest.png', head: 'images/volunteer_hat.png', name: 'Volunteer' }
 ];
