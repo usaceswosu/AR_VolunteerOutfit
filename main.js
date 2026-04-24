@@ -1,5 +1,7 @@
 // --- CONFIG ---
-const OUTFIT_SCALE = 1.5; // 1.0 = normal size, >1 = bigger, <1 = smaller
+let OUTFIT_SCALE = 1.0; // Start at 1.0, user can adjust
+let USER_SCALE_OVERRIDE = 1.0; // Track manual adjustment
+let AUTO_SCALE_ENABLED = true; // Toggle between auto and manual
 const SMOOTHING_ALPHA = 0.1; // Much more smoothing to reduce jitter
 
 // HTML elements
