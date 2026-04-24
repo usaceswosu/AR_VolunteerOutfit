@@ -190,7 +190,7 @@ function overlayImageOnCanvas(img, landmarks, isHead = false) {
     overlayWidth = shoulderWidth * 1.6 * OUTFIT_SCALE;
     overlayHeight = (torsoBottom - torsoTop) * OUTFIT_SCALE;
     overlayX = torsoCenterX - overlayWidth / 2;
-    overlayY = torsoTop - overlayHeight * 0.1;
+    overlayY = torsoTop - overlayHeight * 0.25;
   }
   
   if (prevCoords) {
