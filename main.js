@@ -20,7 +20,7 @@ let currentSetIndex = 1;
 let outfitImages = {};
 let imagesLoaded = 0;
 const totalImages = outfitSets.reduce((count, set) => count + (set.torso ? 1 : 0) + (set.head ? 1 : 0), 0);
-let prevCoords = null;
+const prevCoordsMap = {};
 
 // Load all outfit images
 function loadOutfitImages() {
@@ -146,8 +146,8 @@ function switchOutfitSet(newIndex) {
   });
 }
 
-function overlayImageOnCanvas(img, landmarks, isHead = false) {
-  if (!img) return;
+function overlayImageOnCanvas(img, landmarks, isHead = false, prevCoords = {}) {
+  if (!img) return prevCoords;
   
   const w = canvasElement.width;
   const h = canvasElement.height;
@@ -159,7 +159,7 @@ function overlayImageOnCanvas(img, landmarks, isHead = false) {
     const leftShoulder = landmarks[11];
     const rightShoulder = landmarks[12];
     
-    if (!nose || !leftShoulder || !rightShoulder) return;
+    if (!nose || !leftShoulder || !rightShoulder) return prevCoords;
     
     const shoulderWidth = Math.abs((rightShoulder.x - leftShoulder.x) * w);
     const shoulderCenterY = ((leftShoulder.y + rightShoulder.y) / 2) * h;
@@ -180,7 +180,7 @@ function overlayImageOnCanvas(img, landmarks, isHead = false) {
     const leftHip = landmarks[23];
     const rightHip = landmarks[24];
     
-    if (!leftHip || !rightHip) return;
+    if (!leftShoulder || !rightShoulder || !leftHip || !rightHip) return prevCoords;
     
     const shoulderWidth = Math.abs((rightShoulder.x - leftShoulder.x) * w);
     const torsoTop = Math.min(leftShoulder.y, rightShoulder.y) * h;
@@ -193,21 +193,17 @@ function overlayImageOnCanvas(img, landmarks, isHead = false) {
     overlayY = torsoTop - overlayHeight * 0.2;
   }
   
-  if (prevCoords) {
-    const key = isHead ? 'head' : 'torso';
-    if (prevCoords[key]) {
-      overlayX = SMOOTHING_ALPHA * overlayX + (1 - SMOOTHING_ALPHA) * prevCoords[key].x;
-      overlayY = SMOOTHING_ALPHA * overlayY + (1 - SMOOTHING_ALPHA) * prevCoords[key].y;
-      overlayWidth = SMOOTHING_ALPHA * overlayWidth + (1 - SMOOTHING_ALPHA) * prevCoords[key].width;
-      overlayHeight = SMOOTHING_ALPHA * overlayHeight + (1 - SMOOTHING_ALPHA) * prevCoords[key].height;
-    }
+  const key = isHead ? 'head' : 'torso';
+  if (prevCoords[key]) {
+    overlayX = SMOOTHING_ALPHA * overlayX + (1 - SMOOTHING_ALPHA) * prevCoords[key].x;
+    overlayY = SMOOTHING_ALPHA * overlayY + (1 - SMOOTHING_ALPHA) * prevCoords[key].y;
+    overlayWidth = SMOOTHING_ALPHA * overlayWidth + (1 - SMOOTHING_ALPHA) * prevCoords[key].width;
+    overlayHeight = SMOOTHING_ALPHA * overlayHeight + (1 - SMOOTHING_ALPHA) * prevCoords[key].height;
   }
   
-  if (!prevCoords) prevCoords = {};
-  const key = isHead ? 'head' : 'torso';
   prevCoords[key] = { x: overlayX, y: overlayY, width: overlayWidth, height: overlayHeight };
-  
   canvasCtx.drawImage(img, overlayX, overlayY, overlayWidth, overlayHeight);
+  return prevCoords;
 }
 
 // Setup scale controls
@@ -215,6 +211,8 @@ function setupScaleControls() {
   const slider = document.getElementById('jacket-scale-slider');
   const scaleValue = document.getElementById('scale-value');
   const resetButton = document.getElementById('reset-scale');
+  const toggleButton = document.getElementById('scale-toggle');
+  const scaleContent = document.getElementById('scale-content');
   
   if (!slider) {
     console.error('Slider not found');
@@ -240,6 +238,13 @@ function setupScaleControls() {
     prevCoords = null;
     console.log('Reset to 1.5');
   });
+  
+  if (toggleButton && scaleContent) {
+    toggleButton.addEventListener('click', () => {
+      const isHidden = scaleContent.classList.toggle('hidden');
+      toggleButton.setAttribute('aria-expanded', String(!isHidden));
+    });
+  }
 }
 
 // Camera initialization
@@ -307,21 +312,29 @@ pose.onResults((results) => {
   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
   canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-  if (!results.poseLandmarks) {
-    prevCoords = null;
+  const poseLandmarksList = results.multiPoseLandmarks || (results.poseLandmarks ? [results.poseLandmarks] : []);
+  if (poseLandmarksList.length === 0) {
+    Object.keys(prevCoordsMap).forEach(key => delete prevCoordsMap[key]);
     return;
   }
 
-  const landmarks = results.poseLandmarks;
   const currentSet = outfitSets[currentSetIndex];
-  
-  if (currentSet.torso && outfitImages[`${currentSetIndex}_torso`]) {
-    overlayImageOnCanvas(outfitImages[`${currentSetIndex}_torso`], landmarks, false);
-  }
-  
-  if (currentSet.head && outfitImages[`${currentSetIndex}_head`]) {
-    overlayImageOnCanvas(outfitImages[`${currentSetIndex}_head`], landmarks, true);
-  }
+  poseLandmarksList.forEach((landmarks, personIndex) => {
+    const personKey = `person_${personIndex}`;
+    prevCoordsMap[personKey] = prevCoordsMap[personKey] || {};
+
+    if (currentSet.torso && outfitImages[`${currentSetIndex}_torso`]) {
+      prevCoordsMap[personKey] = overlayImageOnCanvas(
+        outfitImages[`${currentSetIndex}_torso`], landmarks, false, prevCoordsMap[personKey]
+      );
+    }
+
+    if (currentSet.head && outfitImages[`${currentSetIndex}_head`]) {
+      prevCoordsMap[personKey] = overlayImageOnCanvas(
+        outfitImages[`${currentSetIndex}_head`], landmarks, true, prevCoordsMap[personKey]
+      );
+    }
+  });
 });
 
 let lastFrameTime = 0;

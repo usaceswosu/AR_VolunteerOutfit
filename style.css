@@ -64,6 +64,35 @@ canvas {
   background: #007bff;
 }
 
+#scale-content.hidden {
+  display: none;
+}
+
+.scale-toggle-button {
+  margin-top: 14px;
+  width: 46px;
+  height: 46px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.scale-toggle-button:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.scale-toggle-button:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
 /* Loading indicator */
 .loading {
   position: absolute;
