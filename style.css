@@ -68,6 +68,25 @@ canvas {
   display: none;
 }
 
+#scale-control.collapsed {
+  width: auto;
+  min-width: 0;
+  left: auto;
+  right: 20px;
+  padding: 6px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+#scale-control.collapsed #scale-header,
+#scale-control.collapsed #scale-content {
+  display: none !important;
+}
+
+#scale-control.collapsed .scale-toggle-button {
+  margin-top: 0;
+}
+
 .scale-toggle-button {
   margin-top: 14px;
   width: 46px;

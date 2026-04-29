@@ -143,6 +143,7 @@ function switchOutfitSet(newIndex) {
   const buttons = document.querySelectorAll('#outfit-buttons button');
   buttons.forEach((btn, idx) => {
     btn.style.border = `3px solid ${idx === currentSetIndex ? '#007bff' : '#ffffff'}`;
+    btn.classList.toggle('active', idx === currentSetIndex);
   });
 }
 
@@ -212,6 +213,7 @@ function setupScaleControls() {
   const scaleValue = document.getElementById('scale-value');
   const resetButton = document.getElementById('reset-scale');
   const toggleButton = document.getElementById('scale-toggle');
+  const scaleControl = document.getElementById('scale-control');
   const scaleContent = document.getElementById('scale-content');
   
   if (!slider) {
@@ -239,10 +241,10 @@ function setupScaleControls() {
     console.log('Reset to 1.5');
   });
   
-  if (toggleButton && scaleContent) {
+  if (toggleButton && scaleControl) {
     toggleButton.addEventListener('click', () => {
-      const isHidden = scaleContent.classList.toggle('hidden');
-      toggleButton.setAttribute('aria-expanded', String(!isHidden));
+      const isCollapsed = scaleControl.classList.toggle('collapsed');
+      toggleButton.setAttribute('aria-expanded', String(!isCollapsed));
     });
   }
 }
@@ -271,11 +273,14 @@ const pose = new Pose({
 });
 
 pose.setOptions({
-  modelComplexity: 0,
+  modelComplexity: 1,
   smoothLandmarks: true,
   enableSegmentation: false,
   minDetectionConfidence: 0.3,
-  minTrackingConfidence: 0.3
+  minTrackingConfidence: 0.3,
+  enableMultiplePoses: true,
+  maxNumPoses: 5,
+  minPoseDetectionConfidence: 0.3
 });
 
 let canvasSetup = false;
@@ -312,7 +317,16 @@ pose.onResults((results) => {
   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
   canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-  const poseLandmarksList = results.multiPoseLandmarks || (results.poseLandmarks ? [results.poseLandmarks] : []);
+  const poseLandmarksList = (results.multiPoseLandmarks && results.multiPoseLandmarks.length > 0)
+    ? results.multiPoseLandmarks
+    : (results.poseLandmarks ? [results.poseLandmarks] : []);
+
+  console.log('Pose detection:', {
+    multiPoseCount: results.multiPoseLandmarks ? results.multiPoseLandmarks.length : 0,
+    singlePose: !!results.poseLandmarks,
+    usedPoseCount: poseLandmarksList.length
+  });
+
   if (poseLandmarksList.length === 0) {
     Object.keys(prevCoordsMap).forEach(key => delete prevCoordsMap[key]);
     return;

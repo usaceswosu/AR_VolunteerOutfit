@@ -15,11 +15,12 @@
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
   <!-- Scale control slider -->
-  <div id="scale-control" style="
+  <div id="scale-control" class="expanded" style="
     position: fixed;
     bottom: 20px;
-    left: 20px;
     right: 20px;
+    left: auto;
+    max-width: 340px;
     background: rgba(0,0,0,0.8);
     backdrop-filter: blur(10px);
     border-radius: 20px;
@@ -28,7 +29,7 @@
     font-family: system-ui, -apple-system, sans-serif;
     pointer-events: auto;
   ">
-    <div style="display: flex; justify-content: space-between; color: white; margin-bottom: 10px;">
+    <div id="scale-header" style="display: flex; justify-content: space-between; color: white; margin-bottom: 10px;">
       <span style="font-size: 16px; font-weight: 600;">👕 Jacket Size</span>
       <span id="scale-value" style="font-size: 16px; font-weight: bold; background: #007bff; padding: 4px 12px; border-radius: 20px;">1.5x</span>
     </div>
